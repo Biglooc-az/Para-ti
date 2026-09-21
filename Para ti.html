@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Un Girasol Para Ti ♥️</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js (3D Graphics) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-cursive {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .font-serif-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Ambient Glow & Fades - Tiempos acelerados */
+        .fade-in-initial {
+            animation: fadeInSlow 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .fade-in-delayed {
+            opacity: 0;
+            animation: fadeInSlow 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+        }
+
+        @keyframes fadeInSlow {
+            0% {
+                opacity: 0;
+                transform: scale(0.95);
+                filter: blur(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0px);
+            }
+        }
+
+        /* Pulsing indicator */
+        .bounce-soft {
+            animation: bounceSoft 2.5s infinite ease-in-out;
+        }
+
+        @keyframes bounceSoft {
+            0%, 100% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        /* Three.js Canvas Container */
+        #canvas3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background-color: #000000;
+        }
+
+        /* Custom UI overlays */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2.5rem 1rem;
+            transition: opacity 1.2s ease, transform 1.2s ease;
+        }
+
+        .interactive-element {
+            pointer-events: auto;
+        }
+
+        /* Soft pulse glow around sunflower center */
+        .sunflower-glow {
+            filter: drop-shadow(0 0 25px rgba(255, 193, 7, 0.5));
+            animation: pulseSun 3s infinite ease-in-out alternate;
+        }
+
+        @keyframes pulseSun {
+            0% {
+                filter: drop-shadow(0 0 18px rgba(255, 193, 7, 0.35));
+            }
+            100% {
+                filter: drop-shadow(0 0 45px rgba(255, 215, 0, 0.85));
+            }
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s ease;
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas -->
+    <div id="canvas3d"></div>
+
+    <!-- UI OVERLAY: INITIAL STATE -->
+    <div id="initialUI" class="ui-layer">
+        <!-- TOP TITLE -->
+        <div class="text-center mt-2 fade-in-delayed">
+            <h1 class="text-3xl sm:text-5xl md:text-6xl font-cursive text-amber-300 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] tracking-wide">
+                Un girasol para ti 🫰
+            </h1>
+        </div>
+
+        <!-- CENTER TRIGGER (PITCH BLACK & SUNFLOWER ONLY) -->
+        <div class="my-auto fade-in-initial flex flex-col items-center justify-center">
+            <button id="sunflowerTrigger" onclick="zoomToSolarSystem()" class="interactive-element sunflower-glow group relative cursor-pointer focus:outline-none bg-transparent border-0 transform transition-all duration-500 hover:scale-105 active:scale-95">
+                <div class="w-56 h-56 sm:w-72 sm:h-72 rounded-full flex items-center justify-center">
+                    <span class="sr-only">Presionar Girasol</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- BOTTOM PROMPT -->
+        <div class="mb-4 fade-in-delayed text-center">
+            <button onclick="zoomToSolarSystem()" class="interactive-element glass-btn bounce-soft px-5 py-2.5 rounded-full text-amber-200/90 text-xs sm:text-sm font-light tracking-widest uppercase flex items-center gap-2.5 mx-auto hover:text-white">
+                <i class="fa-solid fa-sparkles text-amber-400 text-xs"></i>
+                <span>presióname</span>
+                <i class="fa-solid fa-heart text-red-400 text-xs"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- UI OVERLAY: SOLAR SYSTEM STATE (GALAXY ACTIVE) -->
+    <div id="galaxyUI" class="ui-layer opacity-0 pointer-events-none transition-all duration-1000">
+        <!-- HEADER IN GALAXY MODE -->
+        <div class="text-center mt-2">
+            <h2 class="text-2xl sm:text-4xl font-cursive text-amber-300 drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+                Tu Galaxia de Girasoles ✨
+            </h2>
+            <p class="text-[10px] sm:text-xs text-amber-200/60 tracking-widest uppercase mt-1">
+                Explorar la galaxia en busca otra sorpresita
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer;
+        let mainSunflower, galaxyGroup, galaxyDustGroup, flowersGroup;
+        let isZoomedOut = false;
+
+        // Mouse & Parallax tracking variables
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let currentRotationX = 0, currentRotationY = 0;
+
+        // Camera Animation Targets
+        let targetCamZ = 12;
+        let targetCamY = 0;
+        let currentCamZ = 12;
+        let currentCamY = 0;
+
+        function init3D() {
+            const container = document.getElementById('canvas3d');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.005);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 12);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.PointLight(0xffd700, 4, 120);
+            sunLight.position.set(0, 0, 0);
+            scene.add(sunLight);
+
+            // Galaxy Master Groups
+            galaxyGroup = new THREE.Group();
+            flowersGroup = new THREE.Group();
+            scene.add(galaxyGroup);
+            galaxyGroup.add(flowersGroup);
+
+            // Create Elements
+            createCentralSunflower();
+            createSpiralGalaxyObjects();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('touchmove', onTouchMove, { passive: true });
+        }
+
+        function createCentralSunflower() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 512, 512);
+
+            // Golden center glow
+            const centerX = 256;
+            const centerY = 256;
+            const glowGrad = ctx.createRadialGradient(centerX, centerY, 40, centerX, centerY, 240);
+            glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+            glowGrad.addColorStop(0.4, 'rgba(255, 180, 0, 0.3)');
+            glowGrad.addColorStop(1, 'rgba(255, 140, 0, 0)');
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 240, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Central Sunflower Emoji
+            ctx.font = '280px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🌻', centerX, centerY + 10);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                depthWrite: false,
+                alphaTest: 0.01
+            });
+
+            mainSunflower = new THREE.Sprite(material);
+            mainSunflower.scale.set(8.5, 8.5, 1);
+            mainSunflower.position.set(0, 0, 0);
+            scene.add(mainSunflower);
+        }
+
+        function createEmojiTexture(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, 128, 128);
+
+            ctx.font = '90px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 64, 68);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function createSpiralGalaxyObjects() {
+            const numArms = 4;
+            const armTwist = 3.5;
+            const maxRadius = 45;
+            const flowerEmojis = ['🌻', '🌻', '🌼', '🌼', '🌸', '🪷', '💐', '🏵️', '✨', '⭐', '💛'];
+
+            // A) Golden Cosmic Dust Particles Spiral
+            const totalDustParticles = 4500;
+            const dustGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(totalDustParticles * 3);
+            const colors = new Float32Array(totalDustParticles * 3);
+
+            for (let i = 0; i < totalDustParticles; i++) {
+                const armIndex = i % numArms;
+                const armAngle = (armIndex / numArms) * Math.PI * 2;
+                
+                const dist = Math.pow(Math.random(), 1.8) * maxRadius + 3.5;
+                const theta = armAngle + (dist / maxRadius) * armTwist;
+
+                const scatterX = (Math.random() - 0.5) * (dist * 0.22);
+                const scatterY = (Math.random() - 0.5) * (dist * 0.1);
+                const scatterZ = (Math.random() - 0.5) * (dist * 0.22);
+
+                const px = Math.cos(theta) * dist + scatterX;
+                const py = scatterY;
+                const pz = Math.sin(theta) * dist + scatterZ;
+
+                positions[i * 3] = px;
+                positions[i * 3 + 1] = py;
+                positions[i * 3 + 2] = pz;
+
+                const isBright = Math.random() > 0.3;
+                colors[i * 3] = isBright ? 1.0 : 0.95;
+                colors[i * 3 + 1] = isBright ? 0.85 : 0.75;
+                colors[i * 3 + 2] = isBright ? 0.35 : 0.2;
+            }
+
+            dustGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            dustGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const dustMat = new THREE.PointsMaterial({
+                size: 0.75,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            galaxyDustGroup = new THREE.Points(dustGeo, dustMat);
+            galaxyGroup.add(galaxyDustGroup);
+
+            // B) Flower Emojis Scattered Along Spiral Arms
+            const totalFlowers = 180;
+
+            for (let i = 0; i < totalFlowers; i++) {
+                const emoji = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
+                const texture = createEmojiTexture(emoji);
+                const spriteMat = new THREE.SpriteMaterial({ 
+                    map: texture, 
+                    transparent: true,
+                    depthWrite: false,
+                    alphaTest: 0.05
+                });
+                const sprite = new THREE.Sprite(spriteMat);
+
+                const armIndex = i % numArms;
+                const armAngle = (armIndex / numArms) * Math.PI * 2;
+                const dist = Math.pow(Math.random(), 1.5) * (maxRadius - 4) + 4;
+                const theta = armAngle + (dist / maxRadius) * armTwist;
+
+                const scatterX = (Math.random() - 0.5) * (dist * 0.18);
+                const scatterY = (Math.random() - 0.5) * (dist * 0.08);
+                const scatterZ = (Math.random() - 0.5) * (dist * 0.18);
+
+                const px = Math.cos(theta) * dist + scatterX;
+                const py = scatterY;
+                const pz = Math.sin(theta) * dist + scatterZ;
+
+                sprite.position.set(px, py, pz);
+
+                const scale = (emoji === '🌻' || emoji === '🌼') 
+                    ? (1.8 + Math.random() * 1.0) 
+                    : (1.2 + Math.random() * 0.8);
+
+                sprite.scale.set(scale, scale, 1);
+                flowersGroup.add(sprite);
+            }
+
+            // Initially hide the galaxy so only the central sunflower on pure black background is visible
+            galaxyGroup.visible = false;
+        }
+
+        function zoomToSolarSystem() {
+            isZoomedOut = true;
+            targetCamZ = 50;
+            targetCamY = 22;
+
+            if (galaxyGroup) galaxyGroup.visible = true;
+
+            const initialUI = document.getElementById('initialUI');
+            initialUI.style.opacity = '0';
+            initialUI.style.pointerEvents = 'none';
+
+            setTimeout(() => {
+                const galaxyUI = document.getElementById('galaxyUI');
+                galaxyUI.style.opacity = '1';
+                galaxyUI.style.pointerEvents = 'auto';
+            }, 800);
+        }
+
+        function onMouseMove(event) {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isZoomedOut) {
+                targetRotationY = mouseX * 0.6;
+                targetRotationX = -mouseY * 0.4;
+            }
+        }
+
+        function onTouchMove(event) {
+            if (event.touches.length > 0) {
+                mouseX = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+
+                if (isZoomedOut) {
+                    targetRotationY = mouseX * 0.6;
+                    targetRotationX = -mouseY * 0.4;
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            // A) Breathing animation for main sunflower glow
+            if (mainSunflower) {
+                const breathScale = 8.5 + Math.sin(time * 0.002) * 0.6;
+                mainSunflower.scale.set(breathScale, breathScale, 1);
+                mainSunflower.material.opacity = 0.85 + Math.sin(time * 0.002) * 0.15;
+            }
+
+            // B) Smooth Camera Motion Interpolation
+            currentCamZ += (targetCamZ - currentCamZ) * 0.04;
+            currentCamY += (targetCamY - currentCamY) * 0.04;
+            camera.position.z = currentCamZ;
+            camera.position.y = currentCamY;
+            camera.lookAt(0, 0, 0);
+
+            // C) Parallax Tilt on Galaxy Master Group
+            currentRotationX += (targetRotationX - currentRotationX) * 0.05;
+            currentRotationY += (targetRotationY - currentRotationY) * 0.05;
+
+            galaxyGroup.rotation.x = currentRotationX;
+            galaxyGroup.rotation.y = currentRotationY;
+
+            // D) Harmonious Single-Direction Rotation for Entire Galaxy
+            if (galaxyDustGroup) {
+                galaxyDustGroup.rotation.y += 0.0010;
+            }
+            if (flowersGroup) {
+                flowersGroup.rotation.y += 0.0016;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize and Run
+        window.onload = function() {
+            init3D();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
