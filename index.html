@@ -1,59 +1,87 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full w-full overflow-hidden">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Perrito con Flores</title>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    
     <!-- Canvas Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
-        body {
-            font-family: 'Fredoka', 'Quicksand', sans-serif;
-            transition: background-color 1.5s ease-in-out;
+        /* Prevención de selección y gestos predeterminados de iOS */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh; /* Dynamic Viewport Height para iOS Safari */
             margin: 0;
             padding: 0;
             overflow: hidden;
-            user-select: none;
+            overscroll-behavior: none; /* Bloquea el efecto rebote de iOS */
+            touch-action: manipulation;
+            font-family: 'Fredoka', 'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #1f2937;
         }
 
-        /* Canvas de fondo (Lluvia y Pétalos) */
-        #bgCanvas {
-            position: fixed;
+        /* Respetar la zona segura (Notch, Dynamic Island y barra de inicio) */
+        .safe-area-top {
+            padding-top: max(1rem, env(safe-area-inset-top));
+        }
+        .safe-area-bottom {
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+        }
+        .safe-area-left {
+            padding-left: max(1rem, env(safe-area-inset-left));
+        }
+        .safe-area-right {
+            padding-right: max(1rem, env(safe-area-inset-right));
+        }
+
+        /* Fullscreen Canvas Styles */
+        .fullscreen-canvas {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #bgCanvas {
             z-index: 0;
             pointer-events: none;
         }
 
-        /* Canvas de la Galaxia Interactiva */
         #galaxyCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
             z-index: 30;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 1.8s ease-in-out;
+            transition: opacity 1.5s ease-in-out;
             background: radial-gradient(circle at center, #0B0813 0%, #030206 100%);
-            cursor: default;
         }
 
-        /* Capa de Arcoíris suave */
         .rainbow-arc {
             position: absolute;
-            width: 100vw;
-            height: 100vh;
-            top: 0;
-            left: 0;
+            inset: 0;
             opacity: 0;
             transition: opacity 2s ease-in-out;
             pointer-events: none;
@@ -69,97 +97,103 @@
         }
 
         .fade-transition {
-            transition: opacity 1s ease-in-out;
+            transition: opacity 1s ease-in-out, transform 0.5s ease;
         }
 
-        /* Efecto Zoom In Dramático */
+        /* Zoom Dramático Optimizado para GPU móvil */
         .zoom-dramatic {
-            transition: transform 1.8s cubic-bezier(0.7, 0, 0.3, 1), opacity 1.8s ease-in-out !important;
-            transform: scale(8) translateY(-20%) !important;
+            transition: transform 1.6s cubic-bezier(0.7, 0, 0.3, 1), opacity 1.6s ease-in-out !important;
+            transform: scale(6) translateY(-15%) translateZ(0) !important;
             opacity: 0 !important;
+            will-change: transform, opacity;
         }
 
-        /* Pulso sutil para el texto sin marco */
         @keyframes subtle-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.05); opacity: 1; }
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50% { transform: scale(1.06); opacity: 1; }
         }
+
         .animate-subtle {
-            animation: subtle-pulse 2.5s ease-in-out infinite;
+            animation: subtle-pulse 2.2s ease-in-out infinite;
         }
 
         .text-handwritten {
             font-family: 'Caveat', cursive;
         }
+
+        /* Glassmorphism/Blur con fallback para WebKit */
+        .modal-blur {
+            background-color: rgba(0, 0, 0, 0.45);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
     </style>
 </head>
-<body class="bg-gray-800 text-gray-100 min-h-screen flex flex-col items-center justify-between relative" id="bodyBg">
+<body class="text-gray-100 min-h-full w-full flex flex-col items-center justify-between relative overflow-hidden" id="bodyBg">
 
-    <!-- Canvas de Lluvia / Pétalos -->
-    <canvas id="bgCanvas"></canvas>
+    <!-- Canvas de Lluvia y Pétalos -->
+    <canvas id="bgCanvas" class="fullscreen-canvas"></canvas>
 
     <!-- Canvas de Galaxia Interactiva -->
-    <canvas id="galaxyCanvas"></canvas>
+    <canvas id="galaxyCanvas" class="fullscreen-canvas"></canvas>
     
-    <!-- Capa del Arcoíris -->
+    <!-- Capa de Arcoíris -->
     <div id="rainbowLayer" class="rainbow-arc"></div>
 
-    <!-- Título Principal Superior -->
-    <header class="relative z-10 w-full pt-8 px-4 text-center">
-        <h1 id="mainTitle" class="text-3xl sm:text-5xl font-extrabold tracking-wide text-gray-300 drop-shadow-md transition-all duration-700">
-            No me alcanzo para las flores :(
+    <!-- Encabezado / Título Principal Superior -->
+    <header class="relative z-10 w-full safe-area-top px-4 text-center pointer-events-none">
+        <h1 id="mainTitle" class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-wide text-gray-300 drop-shadow-lg transition-all duration-700 leading-tight">
+            No me alcanzó para las flores :(
         </h1>
     </header>
 
-    <!-- Frase "Presiona la flor" (Texto Plano sin Marcos ni Fondos) -->
-    <div id="sideTextPanel" class="fixed right-6 sm:right-20 top-1/2 -translate-y-1/2 z-20 opacity-0 translate-x-12 transition-all duration-1000 pointer-events-none flex flex-col items-center">
-        <div class="text-amber-900 font-bold text-3xl sm:text-5xl tracking-wide text-handwritten animate-subtle drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)] flex items-center gap-3">
+    <!-- Panel "Presiona la flor" (Optimizado para pantallas chicas e iPhone SE) -->
+    <div id="sideTextPanel" class="fixed right-4 sm:right-12 top-1/2 -translate-y-1/2 z-20 opacity-0 translate-x-8 transition-all duration-1000 pointer-events-none flex flex-col items-center safe-area-right">
+        <div class="text-amber-900 font-bold text-2xl sm:text-4xl md:text-5xl tracking-wide text-handwritten animate-subtle drop-shadow-[0_2px_6px_rgba(255,255,255,0.9)] flex items-center gap-2 sm:gap-3 bg-amber-100/60 backdrop-blur-xs px-4 py-2 rounded-2xl border border-amber-300/50">
             <span>Presiona la flor</span>
-            <span class="text-3xl sm:text-4xl">👈</span>
+            <span class="text-2xl sm:text-3xl">👈</span>
         </div>
     </div>
 
-    <!-- Contenedor Principal de Imágenes centradas en la parte inferior -->
-    <main class="relative z-10 w-full flex-1 flex items-end justify-center pb-0">
-        <div class="relative w-full max-w-lg flex justify-center items-end">
+    <!-- Modal de Mensajes Especiales (Ajustado a centro de pantalla iOS) -->
+    <div id="messageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300 modal-blur safe-area-bottom safe-area-top safe-area-left safe-area-right">
+        <div class="bg-amber-50 text-amber-950 p-6 sm:p-8 rounded-3xl max-w-xs sm:max-w-sm w-full text-center shadow-2xl border-4 border-amber-300 relative transform transition-all scale-90 duration-300 active:scale-100" id="modalCard">
+            <div class="text-4xl mb-2 animate-bounce">🌻✨</div>
+            <h3 id="modalTitle" class="text-xl sm:text-2xl font-bold mb-2 text-amber-800">Un mensaje especial</h3>
+            <p id="modalBody" class="text-base sm:text-lg text-amber-900 leading-relaxed font-medium mb-6">...</p>
+            <button id="closeModalBtn" class="bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-950 font-bold px-6 py-3 rounded-full shadow-lg active:scale-95 transition-all text-base w-full sm:w-auto touch-manipulation">
+                Guardar en el corazón ❤️
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal de Imágenes centradas abajo -->
+    <main class="relative z-10 w-full flex-1 flex items-end justify-center pb-0 safe-area-bottom pointer-events-none">
+        <div class="relative w-full max-w-sm sm:max-w-md md:max-w-lg flex justify-center items-end px-4">
             
-            <!-- Imagen 1: Dog.png -->
+            <!-- Imagen 1: Dog.png (Perrito Triste) -->
             <img 
                 id="dogSad" 
                 src="./imagenes/Dog.png" 
                 alt="Perrito sin flores" 
-                class="w-auto h-auto max-h-[55vh] max-w-full object-contain fade-transition opacity-100 block pointer-events-none"
+                class="w-auto h-auto max-h-[50dvh] max-w-full object-contain fade-transition opacity-100 block pointer-events-none select-none"
                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/333333/ffffff?text=Dog.png';"
             />
 
-            <!-- Imagen 2: Dog 1.png (Misma posición exacta, cliqueable directamente) -->
+            <!-- Imagen 2: Dog 1.png (Perrito Feliz con Flores - Táctil) -->
             <img 
                 id="dogHappy" 
                 src="./imagenes/Dog 1.png" 
                 alt="Perrito con flores" 
-                class="w-auto h-auto max-h-[55vh] max-w-full object-contain fade-transition opacity-0 absolute bottom-0 cursor-pointer pointer-events-none"
-                onclick="startGalaxyTransition()"
+                class="w-auto h-auto max-h-[50dvh] max-w-full object-contain fade-transition opacity-0 absolute bottom-0 cursor-pointer pointer-events-none select-none touch-manipulation"
                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/fde047/333333?text=Dog+1.png';"
             />
 
         </div>
     </main>
 
-    <!-- Modal de Mensaje para Girasoles Especiales -->
-    <div id="flowerModal" class="fixed inset-0 bg-black/70 z-50 opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
-        <div class="bg-gradient-to-b from-amber-50 to-orange-100 text-gray-800 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-2 border-amber-300 transform scale-95 transition-transform duration-300 text-center relative" id="modalCard">
-            <div class="text-4xl mb-3">🌻✨</div>
-            <p id="modalText" class="text-xl sm:text-2xl font-serif text-amber-950 mb-6 leading-relaxed">
-                <!-- Texto dinámico -->
-            </p>
-            <button onclick="closeModal()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-full shadow-md transition-all transform hover:scale-105 active:scale-95">
-                Cerrar ❤️
-            </button>
-        </div>
-    </div>
-
     <script>
-        // DOM References
+        // DOM Elements
         const bodyBg = document.getElementById('bodyBg');
         const bgCanvas = document.getElementById('bgCanvas');
         const galaxyCanvas = document.getElementById('galaxyCanvas');
@@ -168,41 +202,63 @@
         const dogSad = document.getElementById('dogSad');
         const dogHappy = document.getElementById('dogHappy');
         const sideTextPanel = document.getElementById('sideTextPanel');
-        const flowerModal = document.getElementById('flowerModal');
-        const modalCard = document.getElementById('modalCard');
-        const modalText = document.getElementById('modalText');
 
-        const ctxBg = bgCanvas.getContext('2d');
-        const ctxGalaxy = galaxyCanvas.getContext('2d');
+        const messageModal = document.getElementById('messageModal');
+        const modalCard = document.getElementById('modalCard');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        const ctxBg = bgCanvas.getContext('2d', { alpha: true });
+        const ctxGalaxy = galaxyCanvas.getContext('2d', { alpha: true });
 
         let currentScene = "rain"; // "rain", "sun", "galaxy"
         let isTransitioning = false;
+        let isMobile = window.innerWidth <= 768;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap en 2 para ahorro de batería/GPU en iPhones Super Retina
 
-        // Responsive Resizing
+        // --- Manejo de Dimensionamiento del Canvas Optimizado ---
         function resizeAll() {
-            bgCanvas.width = window.innerWidth;
-            bgCanvas.height = window.innerHeight;
-            galaxyCanvas.width = window.innerWidth;
-            galaxyCanvas.height = window.innerHeight;
+            isMobile = window.innerWidth <= 768;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Ajuste del Canvas para evitar borrosidad ajustando por DPR pero limitando carga
+            bgCanvas.width = width * dpr;
+            bgCanvas.height = height * dpr;
+            bgCanvas.style.width = width + 'px';
+            bgCanvas.style.height = height + 'px';
+
+            galaxyCanvas.width = width * dpr;
+            galaxyCanvas.height = height * dpr;
+            galaxyCanvas.style.width = width + 'px';
+            galaxyCanvas.style.height = height + 'px';
+
+            // Escala del contexto al DPR
+            ctxBg.scale(dpr, dpr);
+            ctxGalaxy.scale(dpr, dpr);
         }
-        window.addEventListener('resize', resizeAll);
+
+        window.addEventListener('resize', resizeAll, { passive: true });
         resizeAll();
 
         // --- 1. Lluvia y Pétalos (Fondo Inicial) ---
-        const drops = Array.from({ length: 130 }, () => ({
+        const drops = Array.from({ length: isMobile ? 45 : 90 }, () => ({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
-            length: Math.random() * 20 + 8,
+            length: Math.random() * 18 + 8,
             speed: Math.random() * 6 + 4,
-            opacity: Math.random() * 0.4 + 0.1
+            opacity: Math.random() * 0.35 + 0.1
         }));
 
-        const petals = Array.from({ length: 35 }, () => ({
+        const petals = Array.from({ length: isMobile ? 16 : 30 }, () => ({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
-            size: Math.random() * 7 + 4,
-            speedY: Math.random() * 1.5 + 0.5,
-            speedX: Math.random() * 1 - 0.5,
+            size: Math.random() * 6 + 4,
+            speedY: Math.random() * 1.4 + 0.5,
+            speedX: Math.random() * 0.8 - 0.4,
             color: ['#ffb7b2', '#ffdac1', '#e2f0cb', '#fbe7c6', '#fde047'][Math.floor(Math.random() * 5)],
             angle: Math.random() * 360
         }));
@@ -210,133 +266,154 @@
         // --- 2. Galaxia de 8 Brazos Interactiva ---
         let mouseX = 0;
         let mouseY = 0;
-        let targetOffsetX = 0;
-        let targetOffsetY = 0;
-        let currentOffsetX = 0;
-        let currentOffsetY = 0;
+        let targetTiltX = 0;
+        let targetTiltY = 0;
+        let currentTiltX = 0;
+        let currentTiltY = 0;
         let galaxyRotation = 0;
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-            checkSunflowersHover(e.clientX, e.clientY);
-        });
+        // Sensibilidad y movimiento de inclinación optimizado para táctil
+        function updatePointerPos(clientX, clientY) {
+            mouseX = (clientX / window.innerWidth) * 2 - 1;
+            mouseY = (clientY / window.innerHeight) * 2 - 1;
+        }
 
-        // Configuración de la Galaxia
+        // Listeners táctiles optimizados para iOS (non-blocking)
+        window.addEventListener('mousemove', (e) => updatePointerPos(e.clientX, e.clientY), { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        // Configuración de la Galaxia (Carga optimizada de partículas para Safari Mobile)
         const ARM_COUNT = 8;
-        const PARTICLES_PER_ARM = 220;
+        const PARTICLES_PER_ARM = isMobile ? 80 : 160;
         const galaxyParticles = [];
         const secondarySunflowers = [];
-        const specialSunflowers = []; // 3 Girasoles especiales
-        const sparkles = []; // Explosiones focalizadas
+        const specialSunflowers = [];
+        const sparkles = [];
 
         const specialMessages = [
-            "Nuse que poner. 🌻",
-            "Izquierda, Derecha, Arriba y En frente ✨",
-            "Vivan las matronas Yiaaaaa ❤️"
+            {
+                title: "Para Ti 💛",
+                body: "Un detalle sencillo pero lleno de cariño, pensado especialmente para hacerte sonreír hoy y siempre."
+            },
+            {
+                title: "Girasol de Alegría 🌻",
+                body: "Que nunca falten en tu vida motivos para brillar con la misma luz bonita y cálida de estas flores."
+            },
+            {
+                title: "Un Abrazo Estelar ✨",
+                body: "Entre tantas estrellas y galaxias, este pequeño rincón fue creado para recordarte lo especial que eres."
+            }
         ];
 
         function initGalaxy() {
             galaxyParticles.length = 0;
-            
-            // Generación de Partículas en 8 brazos intercalados
+            const minDim = Math.min(window.innerWidth, window.innerHeight);
+
             for (let arm = 0; arm < ARM_COUNT; arm++) {
                 const isSparkArm = (arm % 2 === 0);
                 const armAngleOffset = (arm * 2 * Math.PI) / ARM_COUNT;
 
                 for (let i = 0; i < PARTICLES_PER_ARM; i++) {
                     const distRatio = Math.pow(Math.random(), 1.2);
-                    const distance = distRatio * (Math.min(window.innerWidth, window.innerHeight) * 0.65) + 35;
+                    const distance = distRatio * (minDim * 0.6) + 30;
                     const spiralAngle = distance * 0.008;
                     const spread = (Math.random() - 0.5) * (0.35 + distRatio * 0.35);
                     const angle = armAngleOffset + spiralAngle + spread;
+                    const z = (Math.random() - 0.5) * 60 * (1 - distRatio * 0.5);
 
                     galaxyParticles.push({
+                        arm: arm,
                         isSpark: isSparkArm,
                         distance: distance,
                         angle: angle,
-                        size: isSparkArm ? Math.random() * 3 + 1 : Math.random() * 6 + 3,
+                        z: z,
+                        size: isSparkArm ? Math.random() * 2.5 + 1 : Math.random() * 5 + 2.5,
                         color: isSparkArm 
                             ? ['#FFF700', '#FFEA00', '#FFD700', '#FFFFFF', '#FFAA00'][Math.floor(Math.random() * 5)]
                             : ['#FF69B4', '#FFB6C1', '#FFA07A', '#FFD700', '#FF6347', '#E6E6FA'][Math.floor(Math.random() * 6)],
                         rotation: Math.random() * Math.PI * 2,
-                        rotSpeed: (Math.random() - 0.5) * 0.04
+                        rotSpeed: (Math.random() - 0.5) * 0.03
                     });
                 }
             }
 
-            // Girasoles Pequeños
+            // Girasoles Secundarios
             secondarySunflowers.length = 0;
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 4; i++) {
                 secondarySunflowers.push(createSecondarySunflower());
             }
 
-            // 3 Girasoles Especiales (Tamaño reducido a 0.3 - 0.35)
+            // Girasoles Especiales (Con Hitbox Ampliada para toques con dedos en iPhone)
             specialSunflowers.length = 0;
             for (let i = 0; i < 3; i++) {
-                const angle = (i * (Math.PI * 2 / 3)) + Math.PI / 6;
-                const distance = Math.min(window.innerWidth, window.innerHeight) * 0.32;
+                const distance = (i + 1) * (minDim * 0.15) + 50;
+                const angle = (i * (2 * Math.PI / 3)) + Math.PI / 4;
                 specialSunflowers.push({
                     distance: distance,
                     angle: angle,
-                    scale: 0.32, // Reducido para mejor armonía
-                    orbitSpeed: 0.0015,
-                    message: specialMessages[i],
+                    z: 0,
+                    scale: isMobile ? 0.38 : 0.45,
+                    orbitSpeed: 0.0015 * (i % 2 === 0 ? 1 : -1),
                     screenX: 0,
                     screenY: 0,
-                    radius: 20,
-                    hovered: false
+                    hitRadius: isMobile ? 55 : 40, // Hitbox generosa para toques con dedo
+                    hovered: false,
+                    messageData: specialMessages[i]
                 });
             }
         }
 
         function createSecondarySunflower() {
-            const distance = Math.random() * (Math.min(window.innerWidth, window.innerHeight) * 0.35) + 80;
-            const angle = Math.random() * Math.PI * 2;
+            const minDim = Math.min(window.innerWidth, window.innerHeight);
             return {
-                distance: distance,
-                angle: angle,
-                scale: Math.random() * 0.2 + 0.18,
+                distance: Math.random() * (minDim * 0.35) + 60,
+                angle: Math.random() * Math.PI * 2,
+                z: (Math.random() - 0.5) * 40,
+                scale: isMobile ? 0.20 : 0.25,
                 orbitSpeed: (Math.random() * 0.002 + 0.001) * (Math.random() > 0.5 ? 1 : -1),
                 screenX: 0,
                 screenY: 0,
-                radius: 15,
+                hitRadius: isMobile ? 45 : 30,
                 hovered: false
             };
         }
 
-        // --- Dibujar Girasol ---
+        // --- Renderizado Nativo Optimizado de Girasoles (Sin shadowBlur para evitar lags en GPU iOS) ---
         function drawSunflower(ctx, x, y, scale, hasHalo = false) {
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(scale, scale);
 
-            // Halo Resplandeciente Especial
+            // Halo pulsante usando gradientes de color plano (Ultra rápido en Safari WebKit)
             if (hasHalo) {
-                const pulse = Math.sin(Date.now() * 0.005) * 10;
-                const haloGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 85 + pulse);
-                haloGrad.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
-                haloGrad.addColorStop(0.5, 'rgba(255, 140, 0, 0.4)');
-                haloGrad.addColorStop(1, 'rgba(255, 200, 0, 0)');
-                ctx.fillStyle = haloGrad;
+                const haloGlow = ctx.createRadialGradient(0, 0, 10, 0, 0, 85);
+                haloGlow.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
+                haloGlow.addColorStop(0.4, 'rgba(255, 140, 0, 0.4)');
+                haloGlow.addColorStop(1, 'rgba(255, 140, 0, 0)');
+                ctx.fillStyle = haloGlow;
                 ctx.beginPath();
-                ctx.arc(0, 0, 85 + pulse, 0, Math.PI * 2);
-                ctx.fill();
-            } else {
-                const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, 70);
-                glow.addColorStop(0, 'rgba(255, 230, 0, 0.9)');
-                glow.addColorStop(0.5, 'rgba(255, 170, 0, 0.3)');
-                glow.addColorStop(1, 'rgba(255, 140, 0, 0)');
-                ctx.fillStyle = glow;
-                ctx.beginPath();
-                ctx.arc(0, 0, 70, 0, Math.PI * 2);
+                ctx.arc(0, 0, 85, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Pétalos Dorados
+            // Resplandor de flor
+            const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, 60);
+            glow.addColorStop(0, 'rgba(255, 230, 0, 0.8)');
+            glow.addColorStop(0.5, 'rgba(255, 170, 0, 0.2)');
+            glow.addColorStop(1, 'rgba(255, 140, 0, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, 0, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Capas de Pétalos
             const layers = [
-                { count: 16, length: 48, width: 15, color: '#FFD700' },
-                { count: 16, length: 40, width: 13, color: '#FFAB00' }
+                { count: 14, length: 46, width: 14, color: '#FFD700' },
+                { count: 14, length: 38, width: 12, color: '#FFAB00' }
             ];
 
             layers.forEach((layer, idx) => {
@@ -348,132 +425,156 @@
                     ctx.rotate(angle);
                     ctx.fillStyle = layer.color;
                     ctx.beginPath();
-                    ctx.moveTo(0, -12);
+                    ctx.moveTo(0, -10);
                     ctx.quadraticCurveTo(layer.width, -layer.length / 2, 0, -layer.length);
-                    ctx.quadraticCurveTo(-layer.width, -layer.length / 2, 0, -12);
+                    ctx.quadraticCurveTo(-layer.width, -layer.length / 2, 0, -10);
                     ctx.fill();
                     ctx.restore();
                 }
             });
 
-            // Núcleo del Girasol
+            // Centro / Núcleo
             ctx.fillStyle = '#4A2A0C';
             ctx.beginPath();
-            ctx.arc(0, 0, 16, 0, Math.PI * 2);
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = '#2A1504';
-            const seeds = 50;
-            const phi = (1 + Math.sqrt(5)) / 2;
+            const seeds = 35;
+            const phi = 2.39996; // Golden Ratio angle
             for (let i = 0; i < seeds; i++) {
-                const r = Math.sqrt(i) * 2;
-                const theta = i * 2 * Math.PI / phi;
+                const r = Math.sqrt(i) * 2.2;
+                const theta = i * phi;
                 ctx.beginPath();
-                ctx.arc(r * Math.cos(theta), r * Math.sin(theta), 1, 0, Math.PI * 2);
+                ctx.arc(r * Math.cos(theta), r * Math.sin(theta), 1.1, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             ctx.restore();
         }
 
+        // Destellos de Brillo
         function triggerFocalSparkle() {
             if (currentScene !== "galaxy") return;
+            const minDim = Math.min(window.innerWidth, window.innerHeight);
             
-            const dist = Math.random() * (Math.min(window.innerWidth, window.innerHeight) * 0.4) + 40;
-            const angle = Math.random() * Math.PI * 2;
-            const duration = Math.floor(Math.random() * 20 + 20);
-
             sparkles.push({
-                distance: dist,
-                angle: angle,
-                maxRadius: Math.random() * 14 + 8,
+                distance: Math.random() * (minDim * 0.4) + 40,
+                angle: Math.random() * Math.PI * 2,
+                z: (Math.random() - 0.5) * 50,
+                maxRadius: Math.random() * 10 + 5,
                 currentFrame: 0,
-                maxFrames: duration,
+                maxFrames: Math.floor(Math.random() * 16 + 14),
                 color: ['#FFFFFF', '#FFF700', '#FFEA00', '#00FFFF'][Math.floor(Math.random() * 4)]
             });
         }
 
         setInterval(() => {
-            if (currentScene === "galaxy" && Math.random() < 0.7) {
+            if (currentScene === "galaxy" && Math.random() < 0.6) {
                 triggerFocalSparkle();
             }
-        }, 800);
+        }, 1000);
 
-        function checkSunflowersHover(clientX, clientY) {
-            if (currentScene !== "galaxy") return;
-            let isAnyHovered = false;
+        // Control unificado de interacción táctil/clic (Sin dobles disparos en iOS)
+        let lastInteractionTime = 0;
 
-            // Secundarios
-            secondarySunflowers.forEach(sf => {
-                const dx = clientX - sf.screenX;
-                const dy = clientY - sf.screenY;
-                sf.hovered = Math.sqrt(dx * dx + dy * dy) < (sf.radius * sf.scale * 2.5);
-                if (sf.hovered) isAnyHovered = true;
-            });
-
-            // Especiales
-            specialSunflowers.forEach(sf => {
-                const dx = clientX - sf.screenX;
-                const dy = clientY - sf.screenY;
-                sf.hovered = Math.sqrt(dx * dx + dy * dy) < (sf.radius * sf.scale * 3);
-                if (sf.hovered) isAnyHovered = true;
-            });
-
-            galaxyCanvas.style.cursor = isAnyHovered ? 'pointer' : 'default';
-        }
-
-        galaxyCanvas.addEventListener('click', (e) => {
+        function handleInteraction(clientX, clientY, e) {
             if (currentScene !== "galaxy") return;
 
-            // Click en Especiales (Abre Modal)
-            specialSunflowers.forEach(sf => {
-                const dx = e.clientX - sf.screenX;
-                const dy = e.clientY - sf.screenY;
-                if (Math.sqrt(dx * dx + dy * dy) < (sf.radius * sf.scale * 3)) {
+            // Prevenir doble disparo cuando ocurren 'touchstart' y 'click' juntos
+            const now = Date.now();
+            if (now - lastInteractionTime < 300) return;
+            lastInteractionTime = now;
+
+            if (e && e.cancelable) {
+                e.preventDefault();
+            }
+
+            // 1. Revisar Girasoles Especiales
+            for (let sf of specialSunflowers) {
+                const dx = clientX - sf.screenX;
+                const dy = clientY - sf.screenY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < sf.hitRadius) {
                     confetti({
-                        particleCount: 50,
-                        spread: 80,
+                        particleCount: isMobile ? 30 : 50,
+                        spread: 70,
                         origin: { x: sf.screenX / window.innerWidth, y: sf.screenY / window.innerHeight },
-                        colors: ['#FFD700', '#FFAA00', '#FF69B4', '#FFFFFF']
+                        colors: ['#FFD700', '#FFA500', '#FF69B4', '#FFFFFF'],
+                        disableForReducedMotion: true
                     });
-                    openModal(sf.message);
-                }
-            });
 
-            // Click en Secundarios (Efecto y Reaparición)
+                    openModal(sf.messageData.title, sf.messageData.body);
+                    return;
+                }
+            }
+
+            // 2. Revisar Girasoles Secundarios
             secondarySunflowers.forEach((sf, idx) => {
-                const dx = e.clientX - sf.screenX;
-                const dy = e.clientY - sf.screenY;
-                if (Math.sqrt(dx * dx + dy * dy) < (sf.radius * sf.scale * 2.5)) {
+                const dx = clientX - sf.screenX;
+                const dy = clientY - sf.screenY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < sf.hitRadius) {
                     confetti({
-                        particleCount: 20,
+                        particleCount: isMobile ? 15 : 25,
                         spread: 50,
                         origin: { x: sf.screenX / window.innerWidth, y: sf.screenY / window.innerHeight },
-                        colors: ['#FFD700', '#FFFFFF']
+                        colors: ['#FFD700', '#FFAA00', '#FFFFFF'],
+                        disableForReducedMotion: true
                     });
+
                     secondarySunflowers[idx] = createSecondarySunflower();
                 }
             });
+        }
+
+        // Registrar Eventos Táctiles y de Clic
+        galaxyCanvas.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                handleInteraction(touch.clientX, touch.clientY, e);
+            }
+        }, { passive: false });
+
+        galaxyCanvas.addEventListener('click', (e) => {
+            handleInteraction(e.clientX, e.clientY, e);
         });
 
-        function openModal(text) {
-            modalText.innerText = text;
-            flowerModal.classList.remove('opacity-0', 'pointer-events-none');
-            flowerModal.classList.add('opacity-100', 'pointer-events-auto');
-            modalCard.classList.remove('scale-95');
+        // Abrir / Cerrar Modal
+        function openModal(title, body) {
+            modalTitle.innerText = title;
+            modalBody.innerText = body;
+            messageModal.classList.remove('opacity-0', 'pointer-events-none');
+            messageModal.classList.add('opacity-100', 'pointer-events-auto');
+            modalCard.classList.remove('scale-90');
             modalCard.classList.add('scale-100');
         }
 
         function closeModal() {
-            flowerModal.classList.remove('opacity-100', 'pointer-events-auto');
-            flowerModal.classList.add('opacity-0', 'pointer-events-none');
+            messageModal.classList.remove('opacity-100', 'pointer-events-auto');
+            messageModal.classList.add('opacity-0', 'pointer-events-none');
             modalCard.classList.remove('scale-100');
-            modalCard.classList.add('scale-95');
+            modalCard.classList.add('scale-90');
         }
 
-        // Main Loop
-        function animate() {
-            ctxBg.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        closeModalBtn.addEventListener('click', closeModal);
+        messageModal.addEventListener('click', (e) => {
+            if (e.target === messageModal) closeModal();
+        });
+
+        // --- Bucle Principal de Renderizado con Delta Time (Ideal para Pantallas ProMotion 120Hz de iPhone Pro) ---
+        let lastTime = performance.now();
+
+        function animate(currentTime) {
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap para evitar saltos
+            lastTime = currentTime;
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            ctxBg.clearRect(0, 0, width, height);
 
             if (currentScene === "rain") {
                 ctxBg.strokeStyle = '#ffffff';
@@ -487,10 +588,10 @@
                     ctxBg.lineTo(d.x, d.y + d.length);
                     ctxBg.stroke();
 
-                    d.y += d.speed;
-                    if (d.y > bgCanvas.height) {
+                    d.y += d.speed * (deltaTime * 60);
+                    if (d.y > height) {
                         d.y = -d.length;
-                        d.x = Math.random() * bgCanvas.width;
+                        d.x = Math.random() * width;
                     }
                 });
             } else if (currentScene === "sun") {
@@ -505,61 +606,126 @@
                     ctxBg.fill();
                     ctxBg.restore();
 
-                    p.y += p.speedY;
+                    p.y += p.speedY * (deltaTime * 60);
                     p.x += Math.sin(p.y * 0.02) * 0.5;
-                    p.angle += 0.5;
+                    p.angle += 0.5 * (deltaTime * 60);
 
-                    if (p.y > bgCanvas.height) {
+                    if (p.y > height) {
                         p.y = -10;
-                        p.x = Math.random() * bgCanvas.width;
+                        p.x = Math.random() * width;
                     }
                 });
             }
 
-            // Render Galaxia
+            // Renderizado de Galaxia
             if (currentScene === "galaxy") {
-                ctxGalaxy.clearRect(0, 0, galaxyCanvas.width, galaxyCanvas.height);
+                ctxGalaxy.clearRect(0, 0, width, height);
 
-                // Desplazamiento sutil con el ratón
-                targetOffsetX = mouseX * 25;
-                targetOffsetY = mouseY * 25;
-                currentOffsetX += (targetOffsetX - currentOffsetX) * 0.05;
-                currentOffsetY += (targetOffsetY - currentOffsetY) * 0.05;
+                targetTiltX = mouseY * 0.3;
+                targetTiltY = mouseX * 0.3;
+                currentTiltX += (targetTiltX - currentTiltX) * 0.06;
+                currentTiltY += (targetTiltY - currentTiltY) * 0.06;
 
-                galaxyRotation += 0.0025;
+                galaxyRotation += 0.002 * (deltaTime * 60);
 
-                const centerX = (galaxyCanvas.width / 2) + currentOffsetX;
-                const centerY = (galaxyCanvas.height / 2) + currentOffsetY;
+                const centerX = width / 2;
+                const centerY = height / 2;
 
-                // 1. Dibujar Partículas de los 8 Brazos
+                const renderQueue = [];
+
+                // 1. Partículas
                 galaxyParticles.forEach(p => {
                     const currAngle = p.angle + galaxyRotation;
-                    const x = centerX + Math.cos(currAngle) * p.distance;
-                    const y = centerY + Math.sin(currAngle) * p.distance;
+                    let x3d = Math.cos(currAngle) * p.distance;
+                    let y3d = Math.sin(currAngle) * p.distance;
+                    let z3d = p.z;
 
-                    ctxGalaxy.save();
-                    ctxGalaxy.translate(x, y);
+                    let cosX = Math.cos(currentTiltX), sinX = Math.sin(currentTiltX);
+                    let cosY = Math.cos(currentTiltY), sinY = Math.sin(currentTiltY);
 
-                    if (p.isSpark) {
-                        ctxGalaxy.fillStyle = p.color;
-                        ctxGalaxy.shadowColor = p.color;
-                        ctxGalaxy.shadowBlur = 6;
-                        ctxGalaxy.beginPath();
-                        ctxGalaxy.arc(0, 0, p.size, 0, Math.PI * 2);
-                        ctxGalaxy.fill();
-                    } else {
-                        ctxGalaxy.rotate(p.rotation + (p.rotSpeed * 10));
-                        ctxGalaxy.fillStyle = p.color;
-                        ctxGalaxy.shadowColor = p.color;
-                        ctxGalaxy.shadowBlur = 4;
-                        ctxGalaxy.beginPath();
-                        ctxGalaxy.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
-                        ctxGalaxy.fill();
-                    }
-                    ctxGalaxy.restore();
+                    let y1 = y3d * cosX - z3d * sinX;
+                    let z1 = y3d * sinX + z3d * cosX;
+                    let x2 = x3d * cosY + z1 * sinY;
+                    let z2 = -x3d * sinY + z1 * cosY;
+
+                    const perspective = 550 / (550 + z2);
+
+                    renderQueue.push({
+                        type: 'particle',
+                        x: centerX + x2 * perspective,
+                        y: centerY + y1 * perspective,
+                        scale: perspective,
+                        z2: z2,
+                        isSpark: p.isSpark,
+                        size: p.size * perspective,
+                        color: p.color,
+                        rotation: p.rotation + p.rotSpeed
+                    });
                 });
 
-                // 2. Dibujar Explosiones de Brillo Focalizadas
+                // 2. Girasoles Secundarios
+                secondarySunflowers.forEach(sf => {
+                    sf.angle += sf.orbitSpeed * (deltaTime * 60);
+                    const currAngle = sf.angle + galaxyRotation;
+
+                    let x3d = Math.cos(currAngle) * sf.distance;
+                    let y3d = Math.sin(currAngle) * sf.distance;
+                    let z3d = sf.z;
+
+                    let cosX = Math.cos(currentTiltX), sinX = Math.sin(currentTiltX);
+                    let cosY = Math.cos(currentTiltY), sinY = Math.sin(currentTiltY);
+
+                    let y1 = y3d * cosX - z3d * sinX;
+                    let z1 = y3d * sinX + z3d * cosX;
+                    let x2 = x3d * cosY + z1 * sinY;
+                    let z2 = -x3d * sinY + z1 * cosY;
+
+                    const perspective = 550 / (550 + z2);
+                    sf.screenX = centerX + x2 * perspective;
+                    sf.screenY = centerY + y1 * perspective;
+
+                    renderQueue.push({
+                        type: 'sunflower',
+                        x: sf.screenX,
+                        y: sf.screenY,
+                        scale: sf.scale * perspective,
+                        hasHalo: false,
+                        z2: z2
+                    });
+                });
+
+                // 3. Girasoles Especiales
+                specialSunflowers.forEach(sf => {
+                    sf.angle += sf.orbitSpeed * (deltaTime * 60);
+                    const currAngle = sf.angle + galaxyRotation;
+
+                    let x3d = Math.cos(currAngle) * sf.distance;
+                    let y3d = Math.sin(currAngle) * sf.distance;
+                    let z3d = sf.z;
+
+                    let cosX = Math.cos(currentTiltX), sinX = Math.sin(currentTiltX);
+                    let cosY = Math.cos(currentTiltY), sinY = Math.sin(currentTiltY);
+
+                    let y1 = y3d * cosX - z3d * sinX;
+                    let z1 = y3d * sinX + z3d * cosX;
+                    let x2 = x3d * cosY + z1 * sinY;
+                    let z2 = -x3d * sinY + z1 * cosY;
+
+                    const perspective = 550 / (550 + z2);
+                    sf.screenX = centerX + x2 * perspective;
+                    sf.screenY = centerY + y1 * perspective;
+
+                    renderQueue.push({
+                        type: 'sunflower',
+                        x: sf.screenX,
+                        y: sf.screenY,
+                        scale: sf.scale * perspective * (1.0 + Math.sin(Date.now() * 0.003) * 0.05),
+                        hasHalo: true,
+                        z2: z2
+                    });
+                });
+
+                // 4. Destellos de Brillo
                 for (let i = sparkles.length - 1; i >= 0; i--) {
                     const sp = sparkles[i];
                     sp.currentFrame++;
@@ -570,71 +736,94 @@
                     }
 
                     const currAngle = sp.angle + galaxyRotation;
-                    const x = centerX + Math.cos(currAngle) * sp.distance;
-                    const y = centerY + Math.sin(currAngle) * sp.distance;
+                    let x3d = Math.cos(currAngle) * sp.distance;
+                    let y3d = Math.sin(currAngle) * sp.distance;
+                    let z3d = sp.z;
+
+                    let cosX = Math.cos(currentTiltX), sinX = Math.sin(currentTiltX);
+                    let cosY = Math.cos(currentTiltY), sinY = Math.sin(currentTiltY);
+
+                    let y1 = y3d * cosX - z3d * sinX;
+                    let z1 = y3d * sinX + z3d * cosX;
+                    let x2 = x3d * cosY + z1 * sinY;
+                    let z2 = -x3d * sinY + z1 * cosY;
+
+                    const perspective = 550 / (550 + z2);
                     const progress = sp.currentFrame / sp.maxFrames;
                     const opacity = Math.sin(progress * Math.PI);
-                    const radius = sp.maxRadius * Math.sin(progress * Math.PI);
+                    const radius = sp.maxRadius * Math.sin(progress * Math.PI) * perspective;
 
-                    ctxGalaxy.save();
-                    ctxGalaxy.translate(x, y);
-                    ctxGalaxy.globalAlpha = opacity;
-                    
-                    const g = ctxGalaxy.createRadialGradient(0, 0, 0, 0, 0, radius);
-                    g.addColorStop(0, '#FFFFFF');
-                    g.addColorStop(0.4, sp.color);
-                    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    
-                    ctxGalaxy.fillStyle = g;
-                    ctxGalaxy.beginPath();
-                    ctxGalaxy.arc(0, 0, radius, 0, Math.PI * 2);
-                    ctxGalaxy.fill();
-
-                    ctxGalaxy.strokeStyle = '#FFFFFF';
-                    ctxGalaxy.lineWidth = 1.5;
-                    ctxGalaxy.beginPath();
-                    ctxGalaxy.moveTo(-radius * 1.3, 0); ctxGalaxy.lineTo(radius * 1.3, 0);
-                    ctxGalaxy.moveTo(0, -radius * 1.3); ctxGalaxy.lineTo(0, radius * 1.3);
-                    ctxGalaxy.stroke();
-
-                    ctxGalaxy.restore();
+                    renderQueue.push({
+                        type: 'sparkle',
+                        x: centerX + x2 * perspective,
+                        y: centerY + y1 * perspective,
+                        radius: radius,
+                        opacity: opacity,
+                        color: sp.color,
+                        z2: z2
+                    });
                 }
 
-                // 3. Dibujar Girasoles Secundarios
-                secondarySunflowers.forEach(sf => {
-                    sf.angle += sf.orbitSpeed;
-                    const currAngle = sf.angle + galaxyRotation;
-                    sf.screenX = centerX + Math.cos(currAngle) * sf.distance;
-                    sf.screenY = centerY + Math.sin(currAngle) * sf.distance;
+                // Ordenar capas por profundidad Z
+                renderQueue.sort((a, b) => b.z2 - a.z2);
 
-                    const activeScale = sf.scale * (sf.hovered ? 1.25 : 1.0);
-                    drawSunflower(ctxGalaxy, sf.screenX, sf.screenY, activeScale);
+                // Dibujar en pantalla (Optimización de llamadas GPU sin shadowBlur excesivos)
+                renderQueue.forEach(item => {
+                    if (item.type === 'particle') {
+                        ctxGalaxy.save();
+                        ctxGalaxy.translate(item.x, item.y);
+                        ctxGalaxy.fillStyle = item.color;
+                        ctxGalaxy.beginPath();
+
+                        if (item.isSpark) {
+                            ctxGalaxy.arc(0, 0, item.size, 0, Math.PI * 2);
+                        } else {
+                            ctxGalaxy.rotate(item.rotation);
+                            ctxGalaxy.ellipse(0, 0, item.size, item.size * 0.5, 0, 0, Math.PI * 2);
+                        }
+                        ctxGalaxy.fill();
+                        ctxGalaxy.restore();
+                    } else if (item.type === 'sunflower') {
+                        drawSunflower(ctxGalaxy, item.x, item.y, item.scale, item.hasHalo);
+                    } else if (item.type === 'sparkle') {
+                        ctxGalaxy.save();
+                        ctxGalaxy.translate(item.x, item.y);
+                        ctxGalaxy.globalAlpha = item.opacity;
+                        
+                        const g = ctxGalaxy.createRadialGradient(0, 0, 0, 0, 0, item.radius);
+                        g.addColorStop(0, '#FFFFFF');
+                        g.addColorStop(0.4, item.color);
+                        g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                        
+                        ctxGalaxy.fillStyle = g;
+                        ctxGalaxy.beginPath();
+                        ctxGalaxy.arc(0, 0, item.radius, 0, Math.PI * 2);
+                        ctxGalaxy.fill();
+
+                        ctxGalaxy.strokeStyle = '#FFFFFF';
+                        ctxGalaxy.lineWidth = 1.2;
+                        ctxGalaxy.beginPath();
+                        ctxGalaxy.moveTo(-item.radius * 1.3, 0); ctxGalaxy.lineTo(item.radius * 1.3, 0);
+                        ctxGalaxy.moveTo(0, -item.radius * 1.3); ctxGalaxy.lineTo(0, item.radius * 1.3);
+                        ctxGalaxy.stroke();
+
+                        ctxGalaxy.restore();
+                    }
                 });
 
-                // 4. Dibujar 3 Girasoles Especiales (con Halo)
-                specialSunflowers.forEach(sf => {
-                    sf.angle += sf.orbitSpeed;
-                    const currAngle = sf.angle + galaxyRotation;
-                    sf.screenX = centerX + Math.cos(currAngle) * sf.distance;
-                    sf.screenY = centerY + Math.sin(currAngle) * sf.distance;
-
-                    const activeScale = sf.scale * (sf.hovered ? 1.2 : 1.0);
-                    drawSunflower(ctxGalaxy, sf.screenX, sf.screenY, activeScale, true);
-                });
-
-                // 5. Girasol Principal Central
-                drawSunflower(ctxGalaxy, centerX, centerY, 1.2 + Math.sin(Date.now() * 0.002) * 0.04);
+                // Girasol Central
+                drawSunflower(ctxGalaxy, centerX, centerY, (isMobile ? 0.85 : 1.1) + Math.sin(Date.now() * 0.002) * 0.03);
             }
 
             requestAnimationFrame(animate);
         }
 
-        // Transición Automática a los 5 Segundos
+        // --- Transición Automática (5 Segundos) ---
         setTimeout(() => {
             currentScene = "sun";
 
-            bodyBg.classList.remove('bg-gray-800', 'text-gray-100');
-            bodyBg.classList.add('bg-amber-100', 'text-gray-800');
+            bodyBg.classList.remove('bg-gray-800');
+            bodyBg.classList.add('bg-amber-100');
             rainbowLayer.style.opacity = '1';
 
             mainTitle.innerText = "ahh te la creiste";
@@ -647,20 +836,24 @@
             dogHappy.classList.remove('opacity-0', 'pointer-events-none');
             dogHappy.classList.add('opacity-100', 'pointer-events-auto');
 
-            sideTextPanel.classList.remove('opacity-0', 'translate-x-12');
+            sideTextPanel.classList.remove('opacity-0', 'translate-x-8');
             sideTextPanel.classList.add('opacity-100', 'translate-x-0');
 
         }, 5000);
 
-        function startGalaxyTransition() {
+        // --- Transición a Galaxia al Tocar el Perrito con Flores ---
+        function startGalaxyTransition(e) {
             if (isTransitioning) return;
             isTransitioning = true;
 
+            if (e && e.cancelable) e.preventDefault();
+
             confetti({
-                particleCount: 90,
-                spread: 100,
+                particleCount: isMobile ? 50 : 80,
+                spread: 90,
                 origin: { y: 0.8 },
-                colors: ['#ffd700', '#ffb703', '#ff4d6d', '#ffffff']
+                colors: ['#ffd700', '#ffb703', '#ff4d6d', '#ffffff'],
+                disableForReducedMotion: true
             });
 
             mainTitle.style.opacity = '0';
@@ -673,11 +866,15 @@
                 currentScene = "galaxy";
                 galaxyCanvas.style.pointerEvents = "auto";
                 galaxyCanvas.style.opacity = "1";
-            }, 750);
+            }, 600);
         }
 
+        // Listener táctil directo para Dog Happy (Multi-touch / Touch start directo)
+        dogHappy.addEventListener('touchend', startGalaxyTransition, { passive: false });
+        dogHappy.addEventListener('click', startGalaxyTransition);
+
         window.onload = function() {
-            animate();
+            requestAnimationFrame(animate);
         };
     </script>
 </body>
