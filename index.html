@@ -157,15 +157,27 @@
 
     <!-- Modal de Mensajes Especiales (Ajustado a centro de pantalla iOS) -->
     <div id="messageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300 modal-blur safe-area-bottom safe-area-top safe-area-left safe-area-right">
-        <div class="bg-amber-50 text-amber-950 p-6 sm:p-8 rounded-3xl max-w-xs sm:max-w-sm w-full text-center shadow-2xl border-4 border-amber-300 relative transform transition-all scale-90 duration-300 active:scale-100" id="modalCard">
+        <div class="bg-amber-50 text-amber-950 p-6 sm:p-8 rounded-3xl max-w-xs sm:max-w-sm w-full text-center shadow-2xl border-4 border-amber-300 relative transform transition-all scale-90 duration-300 active:scale-100 flex flex-col items-center" id="modalCard">
             <div class="text-4xl mb-2 animate-bounce">🌻✨</div>
             <h3 id="modalTitle" class="text-xl sm:text-2xl font-bold mb-2 text-amber-800">Un mensaje especial</h3>
-            <p id="modalBody" class="text-base sm:text-lg text-amber-900 leading-relaxed font-medium mb-6">...</p>
+            <p id="modalBody" class="text-base sm:text-lg text-amber-900 leading-relaxed font-medium mb-4">...</p>
+            
+            <!-- Elemento para el GIF de baile -->
+            <img id="danceGif" src="./imagenes/baile.gif" alt="Baile" class="hidden w-36 h-36 object-contain mb-4 rounded-xl shadow-md" />
+
+            <!-- Elemento para la imagen Seduce -->
+            <img id="seduceImg" src="./imagenes/seduce.jpg" alt="Seduce" class="hidden w-36 h-36 object-contain mb-4 rounded-xl shadow-md" />
+
             <button id="closeModalBtn" class="bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-950 font-bold px-6 py-3 rounded-full shadow-lg active:scale-95 transition-all text-base w-full sm:w-auto touch-manipulation">
-                Guardar en el corazón ❤️
+                Obrigado 🙌🏻
             </button>
         </div>
     </div>
+
+    <!-- Reproductores de Audio -->
+    <audio id="audioDance" src="./musica/izqder.mp3" preload="auto"></audio>
+    <audio id="audioPrimavera" src="./musica/floresamarillas.mp3" preload="auto"></audio>
+    <audio id="audioCareless" src="./musica/careless.mp3" preload="auto"></audio>
 
     <!-- Contenedor Principal de Imágenes centradas abajo -->
     <main class="relative z-10 w-full flex-1 flex items-end justify-center pb-0 safe-area-bottom pointer-events-none">
@@ -208,6 +220,13 @@
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const closeModalBtn = document.getElementById('closeModalBtn');
+        
+        // Elementos visuales y de audio añadidos
+        const danceGif = document.getElementById('danceGif');
+        const seduceImg = document.getElementById('seduceImg');
+        const audioDance = document.getElementById('audioDance');
+        const audioPrimavera = document.getElementById('audioPrimavera');
+        const audioCareless = document.getElementById('audioCareless');
 
         const ctxBg = bgCanvas.getContext('2d', { alpha: true });
         const ctxGalaxy = galaxyCanvas.getContext('2d', { alpha: true });
@@ -215,7 +234,7 @@
         let currentScene = "rain"; // "rain", "sun", "galaxy"
         let isTransitioning = false;
         let isMobile = window.innerWidth <= 768;
-        let dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap en 2 para ahorro de batería/GPU en iPhones Super Retina
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         // --- Manejo de Dimensionamiento del Canvas Optimizado ---
         function resizeAll() {
@@ -225,7 +244,6 @@
             const width = window.innerWidth;
             const height = window.innerHeight;
 
-            // Ajuste del Canvas para evitar borrosidad ajustando por DPR pero limitando carga
             bgCanvas.width = width * dpr;
             bgCanvas.height = height * dpr;
             bgCanvas.style.width = width + 'px';
@@ -236,7 +254,6 @@
             galaxyCanvas.style.width = width + 'px';
             galaxyCanvas.style.height = height + 'px';
 
-            // Escala del contexto al DPR
             ctxBg.scale(dpr, dpr);
             ctxGalaxy.scale(dpr, dpr);
         }
@@ -272,13 +289,11 @@
         let currentTiltY = 0;
         let galaxyRotation = 0;
 
-        // Sensibilidad y movimiento de inclinación optimizado para táctil
         function updatePointerPos(clientX, clientY) {
             mouseX = (clientX / window.innerWidth) * 2 - 1;
             mouseY = (clientY / window.innerHeight) * 2 - 1;
         }
 
-        // Listeners táctiles optimizados para iOS (non-blocking)
         window.addEventListener('mousemove', (e) => updatePointerPos(e.clientX, e.clientY), { passive: true });
         window.addEventListener('touchmove', (e) => {
             if (e.touches.length > 0) {
@@ -286,7 +301,6 @@
             }
         }, { passive: true });
 
-        // Configuración de la Galaxia (Carga optimizada de partículas para Safari Mobile)
         const ARM_COUNT = 8;
         const PARTICLES_PER_ARM = isMobile ? 80 : 160;
         const galaxyParticles = [];
@@ -296,16 +310,16 @@
 
         const specialMessages = [
             {
-                title: "Para Ti 💛",
-                body: "Un detalle sencillo pero lleno de cariño, pensado especialmente para hacerte sonreír hoy y siempre."
+                title: "Izquierda Derecha 🕺🏻💃🏻",
+                body: "Buenos pasitos..."
             },
             {
-                title: "Girasol de Alegría 🌻",
-                body: "Que nunca falten en tu vida motivos para brillar con la misma luz bonita y cálida de estas flores."
+                title: "¿Cuando salimos a tomarnos un cafecito? (o tecito si esq no te gusta el cafe)",
+                body: "cof cof"
             },
             {
-                title: "Un Abrazo Estelar ✨",
-                body: "Entre tantas estrellas y galaxias, este pequeño rincón fue creado para recordarte lo especial que eres."
+                title: "Viva la primavera",
+                body: "Finalmente todo se pondra mas verdecito y que bkn es ver verdecito"
             }
         ];
 
@@ -341,13 +355,11 @@
                 }
             }
 
-            // Girasoles Secundarios
             secondarySunflowers.length = 0;
             for (let i = 0; i < 4; i++) {
                 secondarySunflowers.push(createSecondarySunflower());
             }
 
-            // Girasoles Especiales (Con Hitbox Ampliada para toques con dedos en iPhone)
             specialSunflowers.length = 0;
             for (let i = 0; i < 3; i++) {
                 const distance = (i + 1) * (minDim * 0.15) + 50;
@@ -360,7 +372,7 @@
                     orbitSpeed: 0.0015 * (i % 2 === 0 ? 1 : -1),
                     screenX: 0,
                     screenY: 0,
-                    hitRadius: isMobile ? 55 : 40, // Hitbox generosa para toques con dedo
+                    hitRadius: isMobile ? 55 : 40,
                     hovered: false,
                     messageData: specialMessages[i]
                 });
@@ -382,13 +394,11 @@
             };
         }
 
-        // --- Renderizado Nativo Optimizado de Girasoles (Sin shadowBlur para evitar lags en GPU iOS) ---
         function drawSunflower(ctx, x, y, scale, hasHalo = false) {
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(scale, scale);
 
-            // Halo pulsante usando gradientes de color plano (Ultra rápido en Safari WebKit)
             if (hasHalo) {
                 const haloGlow = ctx.createRadialGradient(0, 0, 10, 0, 0, 85);
                 haloGlow.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
@@ -400,7 +410,6 @@
                 ctx.fill();
             }
 
-            // Resplandor de flor
             const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, 60);
             glow.addColorStop(0, 'rgba(255, 230, 0, 0.8)');
             glow.addColorStop(0.5, 'rgba(255, 170, 0, 0.2)');
@@ -410,7 +419,6 @@
             ctx.arc(0, 0, 60, 0, Math.PI * 2);
             ctx.fill();
 
-            // Capas de Pétalos
             const layers = [
                 { count: 14, length: 46, width: 14, color: '#FFD700' },
                 { count: 14, length: 38, width: 12, color: '#FFAB00' }
@@ -433,7 +441,6 @@
                 }
             });
 
-            // Centro / Núcleo
             ctx.fillStyle = '#4A2A0C';
             ctx.beginPath();
             ctx.arc(0, 0, 15, 0, Math.PI * 2);
@@ -441,7 +448,7 @@
 
             ctx.fillStyle = '#2A1504';
             const seeds = 35;
-            const phi = 2.39996; // Golden Ratio angle
+            const phi = 2.39996;
             for (let i = 0; i < seeds; i++) {
                 const r = Math.sqrt(i) * 2.2;
                 const theta = i * phi;
@@ -453,7 +460,6 @@
             ctx.restore();
         }
 
-        // Destellos de Brillo
         function triggerFocalSparkle() {
             if (currentScene !== "galaxy") return;
             const minDim = Math.min(window.innerWidth, window.innerHeight);
@@ -475,13 +481,11 @@
             }
         }, 1000);
 
-        // Control unificado de interacción táctil/clic (Sin dobles disparos en iOS)
         let lastInteractionTime = 0;
 
         function handleInteraction(clientX, clientY, e) {
             if (currentScene !== "galaxy") return;
 
-            // Prevenir doble disparo cuando ocurren 'touchstart' y 'click' juntos
             const now = Date.now();
             if (now - lastInteractionTime < 300) return;
             lastInteractionTime = now;
@@ -490,7 +494,6 @@
                 e.preventDefault();
             }
 
-            // 1. Revisar Girasoles Especiales
             for (let sf of specialSunflowers) {
                 const dx = clientX - sf.screenX;
                 const dy = clientY - sf.screenY;
@@ -510,7 +513,6 @@
                 }
             }
 
-            // 2. Revisar Girasoles Secundarios
             secondarySunflowers.forEach((sf, idx) => {
                 const dx = clientX - sf.screenX;
                 const dy = clientY - sf.screenY;
@@ -530,7 +532,6 @@
             });
         }
 
-        // Registrar Eventos Táctiles y de Clic
         galaxyCanvas.addEventListener('touchend', (e) => {
             if (e.changedTouches.length > 0) {
                 const touch = e.changedTouches[0];
@@ -542,10 +543,49 @@
             handleInteraction(e.clientX, e.clientY, e);
         });
 
-        // Abrir / Cerrar Modal
+        // Detener todos los audios de forma segura
+        function stopAllAudios() {
+            [audioDance, audioPrimavera, audioCareless].forEach(audio => {
+                if (audio) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+        }
+
+        // Abrir / Cerrar Modal con lógica para los tres mensajes
         function openModal(title, body) {
             modalTitle.innerText = title;
             modalBody.innerText = body;
+
+            // Limpieza previa de imágenes
+            danceGif.classList.add('hidden');
+            seduceImg.classList.add('hidden');
+
+            // Detener cualquier audio anterior antes de iniciar uno nuevo
+            stopAllAudios();
+
+            // 1. Mensaje Izquierda Derecha
+            if (title === "Izquierda Derecha 🕺🏻💃🏻") {
+                danceGif.classList.remove('hidden');
+                if (audioDance) {
+                    audioDance.play().catch(e => console.log("Error al reproducir audio:", e));
+                }
+            } 
+            // 2. Mensaje Viva la primavera
+            else if (title === "Viva la primavera") {
+                if (audioPrimavera) {
+                    audioPrimavera.play().catch(e => console.log("Error al reproducir audio:", e));
+                }
+            } 
+            // 3. Mensaje Cafecito / Tecito
+            else if (title.includes("cafecito")) {
+                seduceImg.classList.remove('hidden');
+                if (audioCareless) {
+                    audioCareless.play().catch(e => console.log("Error al reproducir audio:", e));
+                }
+            }
+
             messageModal.classList.remove('opacity-0', 'pointer-events-none');
             messageModal.classList.add('opacity-100', 'pointer-events-auto');
             modalCard.classList.remove('scale-90');
@@ -557,6 +597,9 @@
             messageModal.classList.add('opacity-0', 'pointer-events-none');
             modalCard.classList.remove('scale-100');
             modalCard.classList.add('scale-90');
+
+            // Detener audios al cerrar modal
+            stopAllAudios();
         }
 
         closeModalBtn.addEventListener('click', closeModal);
@@ -564,11 +607,11 @@
             if (e.target === messageModal) closeModal();
         });
 
-        // --- Bucle Principal de Renderizado con Delta Time (Ideal para Pantallas ProMotion 120Hz de iPhone Pro) ---
+        // --- Bucle Principal de Renderizado ---
         let lastTime = performance.now();
 
         function animate(currentTime) {
-            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap para evitar saltos
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
             lastTime = currentTime;
 
             const width = window.innerWidth;
@@ -617,7 +660,6 @@
                 });
             }
 
-            // Renderizado de Galaxia
             if (currentScene === "galaxy") {
                 ctxGalaxy.clearRect(0, 0, width, height);
 
@@ -633,7 +675,6 @@
 
                 const renderQueue = [];
 
-                // 1. Partículas
                 galaxyParticles.forEach(p => {
                     const currAngle = p.angle + galaxyRotation;
                     let x3d = Math.cos(currAngle) * p.distance;
@@ -663,7 +704,6 @@
                     });
                 });
 
-                // 2. Girasoles Secundarios
                 secondarySunflowers.forEach(sf => {
                     sf.angle += sf.orbitSpeed * (deltaTime * 60);
                     const currAngle = sf.angle + galaxyRotation;
@@ -694,7 +734,6 @@
                     });
                 });
 
-                // 3. Girasoles Especiales
                 specialSunflowers.forEach(sf => {
                     sf.angle += sf.orbitSpeed * (deltaTime * 60);
                     const currAngle = sf.angle + galaxyRotation;
@@ -725,7 +764,6 @@
                     });
                 });
 
-                // 4. Destellos de Brillo
                 for (let i = sparkles.length - 1; i >= 0; i--) {
                     const sp = sparkles[i];
                     sp.currentFrame++;
@@ -764,10 +802,8 @@
                     });
                 }
 
-                // Ordenar capas por profundidad Z
                 renderQueue.sort((a, b) => b.z2 - a.z2);
 
-                // Dibujar en pantalla (Optimización de llamadas GPU sin shadowBlur excesivos)
                 renderQueue.forEach(item => {
                     if (item.type === 'particle') {
                         ctxGalaxy.save();
@@ -811,7 +847,6 @@
                     }
                 });
 
-                // Girasol Central
                 drawSunflower(ctxGalaxy, centerX, centerY, (isMobile ? 0.85 : 1.1) + Math.sin(Date.now() * 0.002) * 0.03);
             }
 
@@ -841,7 +876,7 @@
 
         }, 5000);
 
-        // --- Transición a Galaxia al Tocar el Perrito con Flores ---
+        // --- Transición a Galaxia ---
         function startGalaxyTransition(e) {
             if (isTransitioning) return;
             isTransitioning = true;
@@ -869,7 +904,6 @@
             }, 600);
         }
 
-        // Listener táctil directo para Dog Happy (Multi-touch / Touch start directo)
         dogHappy.addEventListener('touchend', startGalaxyTransition, { passive: false });
         dogHappy.addEventListener('click', startGalaxyTransition);
 
